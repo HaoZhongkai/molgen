@@ -12,7 +12,7 @@ import config
 import sys
 from Funcs import *
 
-'''分子生成环境
+''' 分子生成环境
     数据流法:原子与键更新在mol上
     mol->netx->node_arr,adj
     一次允许单个分子
