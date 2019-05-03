@@ -4,12 +4,15 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 
 class PPO():
-    def __init__(self,opt,policy,env):
+    def __init__(self, opt, policy, env, param):
         self.env = env
         self.policy = policy
         self.cut_out_tra = opt.cut_out_tra
-        self.reward_decay = 0.7
-        self.optimizer = opt.optimizier
+
+        self.lr = param['lr']
+        self.reward_decay = param['reward_decay']
+        self.clip = param['clip']
+        self.optimizer = opt.optimizer(self.policy.parameters(), lr=self.lr)
 
 
 
@@ -22,11 +25,12 @@ class PPO():
         N,A,infos,_ = self.env.inits()
         info = {'reward': 0, 'property': 0, 'smiles': ''}
         terminal = False
-        N = torch.Tensor(N).unsqueeze(0).long()
-        A = torch.Tensor(A).unsqueeze(0)
 
         while not terminal:
-            action_prob,action,value = self.policy(N,A)
+            N = torch.Tensor(N).unsqueeze(0).long()
+            A = torch.Tensor(A).unsqueeze(0)
+            with torch.no_grad():
+                action_prob, action, value = self.policy(N, A)
 
             log_prob = [Categorical(prob).log_prob(act) for prob,act in zip(action_prob,action)]
             action_np = [act.numpy()[0] for act in action]
@@ -65,26 +69,33 @@ class PPO():
 
         return temp_obs, temp_actions, temp_values, temp_neglogpacs, temp_Gt, info
 
+    def update(self, input):
+        obs_, actions_, values_, neglogpacs_, Gt_ = input
+        N, A = obs_
+        actions_ = torch.Tensor(actions_)
 
+        advantages = Gt_ - values_
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-5)
+        advantages = advantages.squeeze()
 
-    def update(self, ratio,advantages,dist_entropy, cliprange_now):
+        vpred, action_log_probs, dist_entropy = self.policy.evaluate_actions(N, A, actions_)
+
+        # data reformat
+        a_f_p, a_s_p, a_b_p, a_t_p = action_log_probs
+        old_f_p, old_s_p, old_b_p, old_t_p = neglogpacs_
+
+        ratio = torch.exp(a_f_p + a_s_p + a_b_p - old_f_p - old_s_p - old_b_p)
 
         surr1 = ratio * advantages
-        surr2 = torch.clamp(ratio, 1.0 - cliprange_now, 1.0 + cliprange_now) * advantages
+        surr2 = torch.clamp(ratio, 1.0 - self.clip, 1.0 + self.clip) * advantages
         action_loss = -torch.min(surr1, surr2).mean()
 
         value_loss = 0
         # value_loss = (returns - vpred).pow(2).mean()
 
         self.optimizer.zero_grad()
-        (value_loss + action_loss - dist_entropy.mean() * 0.01).backward()
+        loss = value_loss + action_loss - dist_entropy.mean() * 0.01
+        loss.backward()
         # nn.utils.clip_grad_norm(self.net.parameters(), 0.5)
         self.optimizer.step()
-
-
-
-
-
-
-
-
+        return

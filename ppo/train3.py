@@ -6,7 +6,7 @@ from tensorboardX import SummaryWriter as Summary
 from config import Config
 from torch.autograd import Variable
 from env.pg_env3 import *
-from ppo import *
+from ppo.ppo1 import *
 import time
 from torchnet import meter
 config = Config()
