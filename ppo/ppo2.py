@@ -94,7 +94,7 @@ class PPO():
         # value_loss = (returns - vpred).pow(2).mean()
 
         self.optimizer.zero_grad()
-        loss = value_loss + action_loss - dist_entropy.mean() * 0.01
+        loss = value_loss + action_loss - dist_entropy.mean() * 1e-3
         loss.backward()
         # nn.utils.clip_grad_norm(self.net.parameters(), 0.5)
         self.optimizer.step()
