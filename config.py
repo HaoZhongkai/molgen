@@ -14,7 +14,7 @@ class Config():
         self.batch_size = 50
         self.lr = 1e-3
         self.lr_decay = 0.95
-        self.max_epoch = 40
+        self.max_epoch = 500
 
 
 
@@ -22,7 +22,7 @@ class Config():
         # GCN options
         self.agg_fun = torch.mean
         self.activation = F.leaky_relu
-        self.node_feature_dim = 40
+        self.node_feature_dim = 50
 
 
         # Env options
@@ -34,7 +34,8 @@ class Config():
         self.dim = self.max_atom_num + self.num_scaff
         self.possible_bonds = [Chem.rdchem.BondType.SINGLE,
                                Chem.rdchem.BondType.DOUBLE,
-                               Chem.rdchem.BondType.TRIPLE]
+                               Chem.rdchem.BondType.TRIPLE,
+                               Chem.rdchem.BondType.AROMATIC]
         self.max_bond_type = len(self.possible_bonds)
         self.add_scaffold_to_adj = True
         self.max_action_num = 30
@@ -63,11 +64,12 @@ class Config():
 
         #molecule predict model options
         self.use_gpu = True
-        self.criterion = nn.MSELoss()
-        self.optimizer = torch.optim.SGD
+        self.criterion = nn.L1Loss()
+        self.optimizer = torch.optim.Adam
 
         #visulize
         self.print_feq = 50
+
 
 
 

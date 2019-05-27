@@ -37,10 +37,9 @@ class RGCNconv(nn.Module):
     '''H:b*n*f  E:b*n*n*k'''
 
     def forward(self, H, E):
-        D = torch.div(1, (E + torch.eye(E.size(1))).sum(2).sum(1))
-        return self.act(
-            torch.einsum('bi,bijk,bjm,mnk->bin', [D, E, H, self.RW]) + torch.einsum('bij,jl->bil', H, self.SW))
-
+        D = torch.div(1, (E + torch.eye(E.size(2))).sum(2).sum(1))
+        H = self.act(torch.einsum('bi,bkij,bjm,mnk->bin', [D, E, H, self.RW]) + torch.einsum('bij,jl->bil', H, self.SW))
+        return H
 
 class Gconv_k_hops(nn.Module):
     def __init__(self, embed_dim, act=None, bond_type=4, k_hop=3):
@@ -48,29 +47,46 @@ class Gconv_k_hops(nn.Module):
         self.act = act
 
 
-class RGCN(nn.Module):
+class RGCN(BasicModel):
     def __init__(self, config):
-        super(RGCN, self).__init__()
+        super(RGCN, self).__init__(config)
         self.embedim = config.node_feature_dim
         self.bond_type = config.max_bond_type
-        self.conv_act = nn.Sigmoid()
+        self.conv_act = nn.Tanh()
         self.agg = torch.mean
+        self.max_atom_num = config.max_atom_num
 
         '''network'''
+        self.atom_embed = nn.Embedding(self.max_atom_num+1,self.embedim,padding_idx=0)
         self.RGconv1 = RGCNconv(self.embedim, self.conv_act, self.bond_type)
         self.RGconv2 = RGCNconv(self.embedim, self.conv_act, self.bond_type)
         self.RGconv3 = RGCNconv(self.embedim, self.conv_act, self.bond_type)
+        # self.RGconv4 = RGCNconv(self.embedim, self.conv_act, self.bond_type)
+        # self.RGconv5 = RGCNconv(self.embedim, self.conv_act, self.bond_type)
+        # self.RGconv6 = RGCNconv(self.embedim, self.conv_act, self.bond_type)
 
-        self.MLP = nn.Sequential(
-            nn.Linear(self.embedim, 20),
-            nn.LeakyReLU(0.1),
-            nn.Linear(20, 1),
-            nn.Sigmoid()
-        )
+        # self.MLP = nn.Sequential(
+        #     nn.Linear(self.embedim, 1),
+        #     nn.Sigmoid()
+            # nn.Linear(30,1),
 
-    def forward(self, H, E):
-        H = self.RGconv1(H, E)
-        H = self.RGconv2(H, E)
-        H = self.RGconv3(H, E)
-        score = self.agg(self.MLP(H))
+        # )
+        self.MLP_act = nn.Tanh()
+        self.MLP1 = nn.Linear(self.embedim,20)
+        self.MLP2 = nn.Linear(20,20)
+        self.MLP3 = nn.Linear(20,1)
+
+    def forward(self, N, E):
+        H = self.atom_embed(N)
+        H = self.RGconv1(H, E)+H
+        H = self.RGconv2(H, E)+H
+        H = self.RGconv3(H, E)+H
+        # H = self.RGconv4(H, E) + H
+        # H = self.RGconv5(H, E) + H
+        # H = self.RGconv6(H, E) + H
+        # score = torch.mean(self.MLP(H),dim=1)
+        H = self.MLP_act(self.MLP1(H))
+        H = self.MLP_act(self.MLP2(H))+H
+        score = torch.mean(self.MLP3(H),dim=1)
+
         return score

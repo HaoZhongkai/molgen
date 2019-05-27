@@ -8,14 +8,15 @@ from config import Config
 torch.set_default_tensor_type(torch.cuda.FloatTensor)
 dconfig = Config()
 
-load_model = False
+load_model = True
 file_path = dconfig.DATASET_PATH+'/gdb9_qed.pkl'
 # file_path = dconfig.DATASET_PATH+'/gdb9_U0.pkl'
-load_path = '/home/jeffzhu/MCTs/dataset/models_/0327_17_07.pkl'
+load_path = '/home/jeffzhu/MCTs/dataset/models_/0527_22_54.pkl'
 
 train_dataset,valid_dataset,test_dataset = QM9qed_dataset(file_path,valid=True).Get_data()
 
 GCN_qed = GCN_QED(dconfig)
+print(GCN_qed)
 if load_model:
     GCN_qed.load_state_dict(torch.load(load_path))
 
