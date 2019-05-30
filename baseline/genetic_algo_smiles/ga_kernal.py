@@ -19,23 +19,25 @@ vocab = ('C','F','H','I','N','O','P','S','c','l','n','o','r','s','#','(',')','+'
      
 '''
 class Population():
-    def __init__(self,params):
+    def __init__(self,params,init_population=None):
         self.population_size = params['population_size']    #~1e3e4 population inits and the minima nums after crossover
         self.gene_num = params['max_symbol_num']      #~50
         self.gene_len = params['bit_symbol_num']      #~6
         self.vocab = params['vocab']
         self.property_name = params['property_kind']
         # self.crossover_rate = params['crossover_rate']
-        self.crossover_segment_rate = params['crossover_segment_len']
+        self.crossover_segment_rate = params['crossover_segment_rate']
         self.mutate_rate = params['mutate_rate']
         self.mutate_gene_rate = params['mutate_gene_rate']
-        self.selection_annealing_rate = params['annealing_rate']
-        self.selection_rate = params['selection_num']      #~1/2 of population,population may not be accurately the size
+        self.selection_annealing_rate = params['select_annealing_rate']  #weed out good gene at annealing prob
+        self.selection_rate = params['select_rate']      #~1/2 of population,population may not be accurately the size
 
+        self.iter = 0       #after selection iter+1
         self.chrome_len = self.gene_len*self.gene_num
         self.vocab_num = len(self.vocab)
         self.population = []
-        self.inits()
+        self.best_individual = []
+        self.inits(init_population)
 
 
     # init random 0 1 array as initial population
@@ -106,6 +108,7 @@ class Population():
                 del_list.append(i)
         np.delete(self.population,del_list).tolist()
         self.population_size = len(self.population)
+        self.iter += 1
         return
 
 
@@ -145,6 +148,27 @@ class Population():
         return
 
 
+    # after selection, stats properties of current population
+    def get_population_stats(self):
+        fitnesses = np.zeros(self.population_size)
+        for i in range(self.population_size):
+            fitnesses[i] = self.population[i]['fitness']
+        best_fitness = fitnesses.max()
+        best_index = fitnesses.argmax()
+        best_indi = copy.deepcopy(self.population[best_index])
+        self.best_individual = best_indi    # renew it in self
+        avg_fitness = fitnesses.mean()
+        effective_num = np.count_nonzero(fitnesses)
+
+        return {
+            'best_fitness':best_fitness,
+            'best_individual':best_indi,
+            'best_index':best_index,
+            'avg_fitness':avg_fitness,
+            'effective_num':effective_num,
+            'fitnesses':fitnesses
+        }
+
 
 
     def encode(self,smiles):
@@ -160,7 +184,7 @@ class Population():
     #decode individual genes
     def decode_gene(self,gene):
         smiles = ''
-        for i in self.gene_num:
+        for i in range(self.gene_num):
             b = gene[i*self.gene_len:(i+1)*self.gene_len]
             index = b.dot(1<<np.arange(b.size)[::-1])
             smiles+=self.vocab[index] if index<self.vocab_num else ''
