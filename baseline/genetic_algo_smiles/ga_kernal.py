@@ -3,6 +3,7 @@ from rdkit.Chem.QED import qed
 from rdkit import Chem as Chem
 import numpy as np
 import copy
+import random
 '''
     since the total vocabulary has 34 elements, then in the gene every 6 bits would be used to represent a character in
     the vocabulary
@@ -42,15 +43,20 @@ class Population():
 
     # init random 0 1 array as initial population
     def inits(self,init_population=None):
+        for i in range(self.population_size):
+            self.population.append({'gene': np.zeros(self.gene_len * self.gene_num), 'smiles': '', 'fitness': 0})
         if init_population:
             for indi in init_population:
-                self.population.append({'gene':self.encode(indi),'smiles':indi,'fitness':0})
+                for i in random.sample(range(self.population_size),
+                                       int(1 / (2 * len(init_population)) * self.population_size)):
+                    self.population[i] = copy.deepcopy({'gene': self.encode(indi), 'smiles': indi, 'fitness': 0})
         else:
 
             indication_array = np.random.randint(1,self.gene_num,size=self.population_size)
             for i in range(self.population_size):
-                self.population.append({'gene':np.zeros(self.gene_len*self.gene_num),'smiles':'','fitness':0})
                 self.population[-1]['gene'][:indication_array[i]] = np.random.randint(2,size=indication_array[i])
+
+        self.population_size = len(self.population)
         self.decode_genes()
         self.eval_fitness_all()
         return
@@ -97,14 +103,15 @@ class Population():
         fitness_arr = np.zeros(self.population_size)
         for i in range(self.population_size):
             fitness_arr[i] = self.population[i]['fitness']
-        fitness_bound = fitness_arr.sort()[int((1-q)*self.population_size)]
+        fitness_bound = np.sort(fitness_arr)[int((1 - q) * self.population_size)]
         # higher than the bound would be selection at prob p, else 1-p
         del_list = []
         rand_prob = np.random.uniform(0,1,self.population_size)
 
         for i in range(self.population_size):
-            if (self.population[i]['fitness']>fitness_bound and rand_prob>p) or (self.population[i]['fitness']<
-            fitness_bound and rand_prob>1-p):
+            if (self.population[i]['fitness'] > fitness_bound and rand_prob[i] > p) or (self.population[i]['fitness'] <=
+                                                                                        fitness_bound and rand_prob[
+                                                                                            i] > 1 - p):
                 del_list.append(i)
         np.delete(self.population,del_list).tolist()
         self.population_size = len(self.population)
@@ -123,7 +130,7 @@ class Population():
         else:
             eval_fun = None
 
-        for i in range(len(self.population_size)):
+        for i in range(self.population_size):
             mol = self.chemical_check(self.population[i]['smiles'])
             self.population[i]['fitness'] = eval_fun(mol) if mol else 0
 
@@ -135,7 +142,7 @@ class Population():
             eval_fun = qed
         else:
             eval_fun = None
-        mol = self.chemical_check(self.population[i]['smiles'])
+        mol = self.chemical_check(smiles)
         fitness = eval_fun(mol) if mol else 0
         return fitness
 
@@ -174,8 +181,8 @@ class Population():
     def encode(self,smiles):
         gene = np.zeros(self.gene_num*self.gene_len)
         for i in range(len(smiles)):
-            bstr = bin(self.vocab.index(smiles[i]))[2:]
-            gene[(i+1)*self.gene_len-len(bstr):(i+1)*self.gene_len] = np.fromstring(bstr)
+            bstr = bin(self.vocab.index(smiles[i]) + 1)[2:]
+            gene[(i + 1) * self.gene_len - len(bstr):(i + 1) * self.gene_len] = np.fromstring(bstr, 'u1') - ord('0')
 
         return gene
 
@@ -186,15 +193,16 @@ class Population():
         smiles = ''
         for i in range(self.gene_num):
             b = gene[i*self.gene_len:(i+1)*self.gene_len]
-            index = b.dot(1<<np.arange(b.size)[::-1])
-            smiles+=self.vocab[index] if index<self.vocab_num else ''
+            index = int(b.dot(1 << np.arange(b.size)[::-1]))
+            smiles += self.vocab[index - 1] if 0 < index < self.vocab_num else random.choice(['C', ''])
         return smiles
 
 
     # to save invoke times ,return mol when it is a valid molecule
     def chemical_check(self,smiles):
-        if Chem.MolFromSmiles(smiles):
-            return
+        mol = Chem.MolFromSmiles(smiles)
+        if mol:
+            return mol
         else:
             return False
 
