@@ -35,6 +35,7 @@ class Population():
 
         self.iter = 0       #after selection iter+1
         self.chrome_len = self.gene_len*self.gene_num
+        self.max_popu_size = self.population_size
         self.vocab_num = len(self.vocab)
         self.population = []
         self.best_individual = []
@@ -66,7 +67,7 @@ class Population():
     , then populationsize  is updated'''
     def crossover(self):
         # num_pairs = int(self.crossover_rate*self.population_size)
-        while len(self.population)<self.population_size:
+        while len(self.population) < self.max_popu_size:
             gene1 = copy.deepcopy(self.population[np.random.randint(self.population_size)]['gene'])
             gene2 = copy.deepcopy(self.population[np.random.randint(self.population_size)]['gene'])
             crossover_gene = np.random.choice(self.chrome_len,int(self.crossover_segment_rate*self.chrome_len))
@@ -109,11 +110,11 @@ class Population():
         rand_prob = np.random.uniform(0,1,self.population_size)
 
         for i in range(self.population_size):
-            if (self.population[i]['fitness'] > fitness_bound and rand_prob[i] > p) or (self.population[i]['fitness'] <=
-                                                                                        fitness_bound and rand_prob[
-                                                                                            i] > 1 - p):
+            if (self.population[i]['fitness'] > fitness_bound and rand_prob[i] > p) or \
+                    (self.population[i]['fitness'] < fitness_bound and rand_prob[i] > 1 - p):
                 del_list.append(i)
-        np.delete(self.population,del_list).tolist()
+
+        self.population = list(np.delete(self.population, del_list))
         self.population_size = len(self.population)
         self.iter += 1
         return
@@ -194,14 +195,16 @@ class Population():
         for i in range(self.gene_num):
             b = gene[i*self.gene_len:(i+1)*self.gene_len]
             index = int(b.dot(1 << np.arange(b.size)[::-1]))
-            smiles += self.vocab[index - 1] if 0 < index < self.vocab_num else random.choice(['C', ''])
+            # smiles += self.vocab[index - 1] if 0 < index < self.vocab_num else random.choice(['C', ''])
+            smiles += self.vocab[index - 1] if 0 < index < self.vocab_num else ''
+
         return smiles
 
 
     # to save invoke times ,return mol when it is a valid molecule
     def chemical_check(self,smiles):
         mol = Chem.MolFromSmiles(smiles)
-        if mol:
+        if mol and smiles:
             return mol
         else:
             return False
