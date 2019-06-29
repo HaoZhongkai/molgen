@@ -14,7 +14,7 @@ class Config():
         self.batch_size = 50
         self.lr = 1e-3
         self.lr_decay = 0.95
-        self.max_epoch = 500
+        self.max_epoch = 40
 
 
 
@@ -22,7 +22,7 @@ class Config():
         # GCN options
         self.agg_fun = torch.mean
         self.activation = F.leaky_relu
-        self.node_feature_dim = 50
+        self.node_feature_dim = 60
 
 
         # Env options
@@ -34,8 +34,7 @@ class Config():
         self.dim = self.max_atom_num + self.num_scaff
         self.possible_bonds = [Chem.rdchem.BondType.SINGLE,
                                Chem.rdchem.BondType.DOUBLE,
-                               Chem.rdchem.BondType.TRIPLE,
-                               Chem.rdchem.BondType.AROMATIC]
+                               Chem.rdchem.BondType.TRIPLE]
         self.max_bond_type = len(self.possible_bonds)
         self.add_scaffold_to_adj = True
         self.max_action_num = 30
@@ -64,12 +63,11 @@ class Config():
 
         #molecule predict model options
         self.use_gpu = True
-        self.criterion = nn.L1Loss()
-        self.optimizer = torch.optim.Adam
+        self.criterion = nn.MSELoss()
+        self.optimizer = torch.optim.SGD
 
         #visulize
         self.print_feq = 50
-
 
 
 
@@ -78,20 +76,10 @@ class Config():
         self.final_valid_reward = 0
         self.final_not_valid_reward = -5
         self.reward_ratio = {'logP':0,'qed':2}
-        self.step_reward = {'positive':1,'negative':0}
+        self.step_reward = {'positive':0.1,'negative':-0.1}
         self.early_stop = -0.1
-        self.cut_out_tra = False
 
 
         #debug writer
         self.writer = SummaryWriter(log_dir=self.LOGS_PATH)
 
-
-
-        #RGCN config
-        self.rgcn_config = {
-            'conv_dim':[[128, 64], 128, [128, 64]],
-            'm_dim': len(self.possible_atoms)+1,
-            'b_dim': len(self.possible_bonds),
-            'dropout':False
-        }

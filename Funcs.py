@@ -170,7 +170,7 @@ def node_add_scaffold(node_arr,possible_atom_types):
 
 
 '''simles to adj and node_arr'''
-def smiles2data(smiles,max_atom_num,atoms,bonds,batch=True):
+def smiles2data(smiles,max_atom_num,atoms,bonds,batch=False):
     if batch or type(smiles) is list:
         error = 0
         adj = []

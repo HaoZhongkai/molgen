@@ -4,9 +4,9 @@ import numpy as np
 from rdkit import Chem
 
 if __name__ == '__main__':
-    from .progress_bar import ProgressBar
+    from progress_bar import ProgressBar
 else:
-    from .progress_bar import ProgressBar
+    from progress_bar import ProgressBar
 
 from datetime import datetime
 
@@ -58,26 +58,26 @@ class SparseMolecularDataset():
         # it contains the all the molecules stored as SMILES strings
         self.smiles = np.array(self.smiles)
 
-        # a (N, L) matrix where N is the length of the dataset and each L-dim vector contains the 
-        # indices corresponding to a SMILE sequences with padding wrt the max length of the longest 
+        # a (N, L) matrix where N is the length of the dataset and each L-dim vector contains the
+        # indices corresponding to a SMILE sequences with padding wrt the max length of the longest
         # SMILES sequence in the dataset (see self._genS)
         self.data_S = np.stack(self.data_S)
 
-        # a (N, 9, 9) tensor where N is the length of the dataset and each 9x9 matrix contains the 
+        # a (N, 9, 9) tensor where N is the length of the dataset and each 9x9 matrix contains the
         # indices of the positions of the ones in the one-hot representation of the adjacency tensor
         # (see self._genA)
         self.data_A = np.stack(self.data_A)
 
-        # a (N, 9) matrix where N is the length of the dataset and each 9-dim vector contains the 
+        # a (N, 9) matrix where N is the length of the dataset and each 9-dim vector contains the
         # indices of the positions of the ones in the one-hot representation of the annotation matrix
         # (see self._genX)
         self.data_X = np.stack(self.data_X)
 
-        # a (N, 9) matrix where N is the length of the dataset and each  9-dim vector contains the 
+        # a (N, 9) matrix where N is the length of the dataset and each  9-dim vector contains the
         # diagonal of the correspondent adjacency matrix
         self.data_D = np.stack(self.data_D)
 
-        # a (N, F) matrix where N is the length of the dataset and each F vector contains features 
+        # a (N, F) matrix where N is the length of the dataset and each F vector contains features
         # of the correspondent molecule (see self._genF)
         self.data_F = np.stack(self.data_F)
 
@@ -85,9 +85,9 @@ class SparseMolecularDataset():
         # eigenvalues of the correspondent Laplacian matrix
         self.data_Le = np.stack(self.data_Le)
 
-        # a (N, 9, 9) matrix where N is the length of the dataset and each  9x9 matrix contains the 
+        # a (N, 9, 9) matrix where N is the length of the dataset and each  9x9 matrix contains the
         # eigenvectors of the correspondent Laplacian matrix
-        self.data_Lv = np.stack(self.data_Lv) 
+        self.data_Lv = np.stack(self.data_Lv)
 
         self.vertexes = self.data_F.shape[-2]
         self.features = self.data_F.shape[-1]
@@ -119,8 +119,7 @@ class SparseMolecularDataset():
         self.smiles_encoder_m = {l: i for i, l in enumerate(smiles_labels)}
         self.smiles_decoder_m = {i: l for i, l in enumerate(smiles_labels)}
         self.smiles_num_types = len(smiles_labels)
-        self.log('Created SMILES encoder and decoder with {} types and 1 PAD symbol!'.format(
-            self.smiles_num_types - 1))
+        self.log('Created SMILES encoder and decoder with {} types and 1 PAD symbol!'.format(self.smiles_num_types - 1))
 
     def _generate_AX(self):
         self.log('Creating features and adjacency matrices..')
@@ -323,6 +322,8 @@ class SparseMolecularDataset():
 
 if __name__ == '__main__':
     data = SparseMolecularDataset()
-    data.load('data/gdb9_9nodes.sparsedataset')
-    data.smiles[0]
-    data.data_A[0]
+    # data.generate('../dataset/datasets/zinc.smi', filters=lambda x: x.GetNumAtoms() <= 38)
+    # data.save('../dataset/datasets/zinc_250k_v01.sparsedataset')
+
+    data.load('../dataset/datasets/zinc_250k_v01.sparsedataset')
+    print(data.smiles[100000])
