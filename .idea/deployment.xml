@@ -2,7 +2,7 @@
 <project version="4">
   <component name="PublishConfigData">
     <serverData>
-      <paths name="hzk0">
+      <paths name="jeffzhu0">
         <serverdata>
           <mappings>
             <mapping deploy="/MCTs" local="$PROJECT_DIR$" web="/" />
@@ -13,6 +13,13 @@
         </serverdata>
       </paths>
       <paths name="jeffzhu@172.16.46.217:22">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="testnips">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
