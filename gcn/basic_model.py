@@ -11,9 +11,7 @@ class BasicModel(nn.Module):
         self.Model_name = str(type(self))
 
     def save(self,name=None):
-        if name is None:
-            name = '/'+time.strftime('%m%d_%H_%M.pkl')
-            name = self.path + name
+        name = self.path + '/' + name + time.strftime('%m%d_%H_%M.pkl')
         torch.save(self.state_dict(),name)
         return name
 

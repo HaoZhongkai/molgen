@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import torch
+from torchnet import meter
 
 bond_type = [Chem.rdchem.BondType.SINGLE,
              Chem.rdchem.BondType.DOUBLE,
@@ -258,3 +259,26 @@ def one_hot(x,embedding_dim):
     return torch.zeros(*x.size(),embedding_dim).scatter(x.ndimension(),x.unsqueeze(-1),1)
 
 
+'''提供一个处理多项loss的简单结构的meter'''
+
+
+class MAvgMeter():
+    def __init__(self, id_list):
+        self.id_list = id_list
+        self.meter = {ids: meter.AverageValueMeter() for ids in id_list}
+
+    def reset(self):
+        for key in self.id_list:
+            self.meter[key].reset()
+
+    def add(self, values):
+        for key in self.id_list:
+            self.meter[key].add(values[key])
+
+    '''return mean value'''
+
+    def value(self, key=None):
+        if key:
+            return self.meter[key].value
+        else:
+            return {key: self.meter[key].value for key in self.id_list}

@@ -24,6 +24,20 @@ class Config():
         self.activation = F.leaky_relu
         self.node_feature_dim = 60
 
+        # vae options
+        self.encoder_layers = 3
+        self.decoder_layers = 2
+        self.res_connection = True
+        self.predictor_id = ['qed']  # number of properties needs to predict
+        self.vae_path = {'encoder': None,
+                         'decoder': None,
+                         'qed': None}
+        self.prop_loss_weight = {'qed': 1
+                                 }
+        self.save_names = ['encoder',
+                           'decoder',
+                           'predictor']
+
 
         # Env options
         self.max_atom_num = 9
