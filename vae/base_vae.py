@@ -73,16 +73,40 @@ class Decoder(BasicModel):
     def __init__(self, config):
         super(Decoder, self).__init__(config)
         self.embeddim = config.node_feature_dim
+        self.max_atom_type = len(config.possible_atoms)
         self.load_path = config.vae_path['decoder']
 
         self.MLP_mu = nn.Linear(self.embeddim, self.embeddim)
-        self.MLP_sigma = nn.Linear(self.embeddim, self.embeddim)
+        self.MLP_logvar = nn.Linear(self.embeddim, self.embeddim)
+
+        self.Node_MLP = nn.Sequential(
+            nn.Linear(self.embeddim, 25),
+            nn.ReLU(),
+            nn.Linear(25, self.max_atom_type + 1),
+            nn.Softmax()
+        )
+
 
         if self.load_path:
             self.load_state_dict(torch.load(self.load_path))
 
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+
+
+
+
     def forward(self, H):
-        pass
+        mu = self.MLP_mu(H)
+        logvar = self.MLP_logvar(H)
+
+        H = self.reparameterize(mu, logvar)
+
+        node_logits = self.Node_MLP(H)
+
+
 
 
 '''the whole model of our VAE'''
