@@ -7,7 +7,7 @@ from torch import nn
 from tensorboardX import SummaryWriter
 from Funcs import MAvgMeter
 from vae.base_vae import VAE
-from vae.data_util import ZincDataset
+from vae.data_util import Zinc_dataset
 
 
 class Trainer():
@@ -46,8 +46,8 @@ class Trainer():
                 if self.opt.use_gpu:
                     N = N.type(torch.long).cuda()
                     A = A.cuda()
-                    label = label.cuda()
-                    label = torch.unsqueeze(label, 1)  # 数据预处理问题补丁
+                    label = {key: value.cuda() for key, value in label.items()}
+                    # label = torch.unsqueeze(label, 1)  # 数据预处理问题补丁
 
                 self.optimizer.zero_grad()
 
@@ -120,14 +120,14 @@ class Trainer():
 # begin main training
 torch.set_default_tensor_type(torch.FloatTensor)
 dconfig = Config()
-zinc_path = dconfig.DATASET_PATH + ''
+zinc_path = '/home/jeffzhu/MCTs/dataset/datasets/datasetszinc_dataset_clean.pkl'
 load_path = None
 
 GAVAE = VAE(dconfig)
 if load_path:
     GAVAE.load_state_dict(torch.load(load_path))
 
-train_data, val_data, test_data = ZincDataset(dconfig, zinc_path, dconfig.predictor_id)
+train_data, val_data, test_data = Zinc_dataset(zinc_path, 1500, 100, dconfig.predictor_id).Get_data()
 VAE_trainer = Trainer(model=GAVAE, opt=dconfig)
 
 print(GAVAE)

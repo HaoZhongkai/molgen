@@ -38,12 +38,14 @@ class Config():
                            'decoder',
                            'predictor']
 
+        self.pred_path = {'qed': None}
+
 
         # Env options
         self.max_atom_num = 9
         self.use_scaffold = False
         self.use_random_sample = False
-        self.possible_atoms = ['C','N','O','F']
+        self.possible_atoms = ['C', 'N', 'O', 'F', 'S', 'Cl', 'Br', 'I']
         self.num_scaff = len(self.possible_atoms)
         self.dim = self.max_atom_num + self.num_scaff
         self.possible_bonds = [Chem.rdchem.BondType.SINGLE,

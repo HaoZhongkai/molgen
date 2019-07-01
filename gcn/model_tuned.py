@@ -2,7 +2,7 @@ from torch import nn
 import torch
 from torch.nn.parameter import Parameter
 from torch.nn import init
-
+import torch.nn.functional as F
 
 class RGCNconv(nn.Module):
     def __init__(self, embed_dim, act=F.sigmoid, bond_type=4):
