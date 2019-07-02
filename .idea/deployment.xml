@@ -5,10 +5,11 @@
       <paths name="jeffzhu0">
         <serverdata>
           <mappings>
-            <mapping deploy="/MCTs" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/nips_gail/MCTs" local="$PROJECT_DIR$" web="/" />
           </mappings>
           <excludedPaths>
             <excludedPath path="/MCTs/dataset" />
+            <excludedPath path="/nips_gail/MCTs/dataset" />
           </excludedPaths>
         </serverdata>
       </paths>

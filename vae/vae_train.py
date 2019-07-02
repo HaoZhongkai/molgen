@@ -126,10 +126,13 @@ torch.set_default_tensor_type(torch.FloatTensor)
 dconfig = Config()
 
 dconfig.optimizer = torch.optim.Adam
-dconfig.lr = 3e-3
+dconfig.lr = 5e-3
 dconfig.res_connection = True
+dconfig.encoder_layers = 40
+dconfig.node_feature_dim = 100
+dconfig.batch_size = 50
 
-zinc_path = '/home/jeffzhu/MCTs/dataset/datasets/zinc_dataset_clean.pkl'
+zinc_path = '/home/jeffzhu/nips_gail/MCTs/dataset/datasets/zinc_dataset_clean.pkl'
 load_path = None
 
 GAVAE = VAE(dconfig)

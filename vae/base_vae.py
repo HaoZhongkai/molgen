@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from gcn.basic_model import BasicModel
 from config import Config
-from gcn.model_tuned import RGCNconv
+from gcn.model_tuned import *
 import torch.nn.functional as F
 
 default_config = Config()
@@ -19,13 +19,13 @@ class Encoder(BasicModel):
         self.res = config.res_connection
         self.load_path = config.vae_path['encoder']
         self.use_gpu = config.use_gpu
-        self.conv_act = nn.ReLU()
+        self.conv_act = nn.Tanh()
         self.RGconv = []
         self.embedding_layer = nn.Embedding(self.max_atom_num + 1, self.embeddim, padding_idx=0)
 
         for i in range(self.encoder_layers):
             self.RGconv.append(RGCNconv(self.embeddim, self.conv_act, bond_type=self.bond_type))
-
+            # self.RGconv.append(RGCNkconv(self.embeddim,3,self.conv_act,bond_type=self.bond_type))
         # load if necessary
         if self.load_path:
             self.load_state_dict(torch.load(self.load_path))
@@ -67,7 +67,7 @@ class Predictor(BasicModel):
         # )
 
         '''rGCN'''
-        self.MLP_act = nn.ReLU()
+        self.MLP_act = nn.Tanh()
         self.MLP1 = nn.Linear(self.embeddim, 20)
         self.MLP2 = nn.Linear(20, 20)
         self.MLP3 = nn.Linear(20, 1)
@@ -85,7 +85,7 @@ class Predictor(BasicModel):
         H = self.MLP_act(self.MLP2(H)) + H
         score = torch.mean(self.MLP3(H), dim=1)
 
-        return score
+        return F.sigmoid(score)
 
 
 '''VAE part decoder'''

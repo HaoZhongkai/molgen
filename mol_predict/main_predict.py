@@ -9,9 +9,11 @@ torch.set_default_tensor_type(torch.cuda.FloatTensor)
 dconfig = Config()
 
 load_model = True
-file_path = dconfig.DATASET_PATH+'/gdb9_qed.pkl'
+# file_path = dconfig.DATASET_PATH+'/gdb9_qed.pkl'
 # file_path = dconfig.DATASET_PATH+'/gdb9_U0.pkl'
-load_path = '/home/jeffzhu/MCTs/dataset/models_/0527_22_54.pkl'
+file_path = ''
+# load_path = '/home/jeffzhu/MCTs/dataset/models_/0527_22_54.pkl'
+load_path = None
 
 train_dataset,valid_dataset,test_dataset = QM9qed_dataset(file_path,valid=True).Get_data()
 
