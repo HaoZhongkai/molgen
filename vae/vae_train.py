@@ -8,6 +8,8 @@ from tensorboardX import SummaryWriter
 from Funcs import MAvgMeter
 from vae.base_vae import VAE
 from vae.data_util import Zinc_dataset
+import time
+import torch.optim
 
 
 class Trainer():
@@ -20,7 +22,7 @@ class Trainer():
 
         self.optimizer = opt.optimizer(self.model.parameters(), lr=opt.lr)
         self.log_path = opt.LOGS_PATH
-        self.writer = SummaryWriter(log_dir=self.opt.LOGS_PATH)
+        self.writer = SummaryWriter(log_dir=self.opt.LOGS_PATH + '/' + time.strftime('%m%d_%H_%M'))
 
         if opt.use_gpu:
             torch.set_default_tensor_type(torch.cuda.FloatTensor)
@@ -63,10 +65,12 @@ class Trainer():
 
                 if i % self.opt.print_feq == self.opt.print_feq - 1:
                     nither = epoch * len(train_loader) + i
-                    print('EPOCH:{0},i:{1},loss:{2}'.format(epoch, i, loss.data.cpu()))
+                    print('EPOCH:{0},i:{1},loss:{2}'.format(epoch, i, loss.data.cpu()), end=' ')
                     self.writer.add_scalar('train_loss', loss_meter.value()[0], nither)
                     for key in self.pred_id:
                         self.writer.add_scalar(key, abs_losses.value(key)[0], nither)
+                        print(key, float(abs_losses.value(key)[0]), end=' ')
+                    print('\n')
 
             if val_data:
                 val_loss = self.test(val_data, val=True)
@@ -97,8 +101,8 @@ class Trainer():
             if self.opt.use_gpu:
                 H = H.type(torch.long).cuda()
                 A = A.cuda()
-                label = label.cuda()
-                label = torch.unsqueeze(label, 1)  # 数据预处理问题补丁
+                label = {key: value.cuda() for key, value in label.items()}
+                # label = torch.unsqueeze(label, 1)  # 数据预处理问题补丁
 
             loss = self.model(H, A, label)['loss']
             loss_meter.add(loss.data.cpu().detach().numpy())
@@ -120,14 +124,19 @@ class Trainer():
 # begin main training
 torch.set_default_tensor_type(torch.FloatTensor)
 dconfig = Config()
-zinc_path = '/home/jeffzhu/MCTs/dataset/datasets/datasetszinc_dataset_clean.pkl'
+
+dconfig.optimizer = torch.optim.Adam
+dconfig.lr = 3e-3
+dconfig.res_connection = True
+
+zinc_path = '/home/jeffzhu/MCTs/dataset/datasets/zinc_dataset_clean.pkl'
 load_path = None
 
 GAVAE = VAE(dconfig)
 if load_path:
     GAVAE.load_state_dict(torch.load(load_path))
 
-train_data, val_data, test_data = Zinc_dataset(zinc_path, 1500, 100, dconfig.predictor_id).Get_data()
+train_data, val_data, test_data = Zinc_dataset(zinc_path, 150000, 1000, dconfig.predictor_id).Get_data()
 VAE_trainer = Trainer(model=GAVAE, opt=dconfig)
 
 print(GAVAE)

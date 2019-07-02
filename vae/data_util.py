@@ -5,6 +5,7 @@ from torch.utils.data import TensorDataset
 import numpy as np
 
 
+
 # 取测试集为1000个
 # props 为id序列 list of id names
 class Zinc_dataset():
@@ -16,6 +17,7 @@ class Zinc_dataset():
         self.valid_num = valid_num
         self.propid = propid
         self.dataset = {'train': [], 'valid': [], 'test': []}
+
 
     def load_data(self):
         all_data = pickle.load(open(self.path, 'rb'))
@@ -44,6 +46,9 @@ class Zinc_dataset():
 
         return train, test, valid
 
+
+
+
     def Get_data(self):
         train, test, valid = self.load_data()
         train_set = zinc_data(train)
@@ -51,6 +56,8 @@ class Zinc_dataset():
         valid_set = zinc_data(valid)
 
         return train_set, test_set, valid_set
+
+
 
 
 class zinc_data(Dataset):
@@ -64,6 +71,7 @@ class zinc_data(Dataset):
         return self.len
 
     def __getitem__(self, item):
+        labels = {key: [] for key in self.keys}
         for key in self.keys:
-            self.labels[key] = self.data[2][key][item]
-        return (self.data[0][item], self.data[1][item], self.labels)
+            labels[key] = self.data[2][key][item]
+        return (self.data[0][item], self.data[1][item], labels)

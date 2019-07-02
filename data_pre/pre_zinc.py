@@ -6,15 +6,16 @@ from config import Config
 import torch
 import numpy as np
 
+
 table_of_atom = {
-    'C': 0,
-    'N': 1,
-    'O': 2,
-    'F': 3,
-    'S': 4,
-    'Cl': 5,
-    'Br': 6,
-    'I': 7
+    'C': 1,
+    'N': 2,
+    'O': 3,
+    'F': 4,
+    'S': 5,
+    'Cl': 6,
+    'Br': 7,
+    'I': 8
 }
 
 opt = Config()
@@ -54,5 +55,5 @@ node_arr, adj, qeds, J_scores = torch.Tensor(node_arr), torch.Tensor(adj), torch
 
 data = {'node_arr': node_arr, 'adj': adj, 'qed': qeds, 'J_score': J_scores}
 
-pickle.dump(data, open(opt.DATASET_PATH + 'zinc_dataset_clean.pkl', 'wb'))
+pickle.dump(data, open(opt.DATASET_PATH + '/zinc_dataset_clean.pkl', 'wb'))
 print('OK')

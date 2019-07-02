@@ -273,12 +273,12 @@ class MAvgMeter():
 
     def add(self, values):
         for key in self.id_list:
-            self.meter[key].add(values[key])
+            self.meter[key].add(values[key].data.cpu())
 
     '''return mean value'''
 
     def value(self, key=None):
         if key:
-            return self.meter[key].value
+            return self.meter[key].value()
         else:
-            return {key: self.meter[key].value for key in self.id_list}
+            return {key: self.meter[key].value() for key in self.id_list}

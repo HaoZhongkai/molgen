@@ -18,16 +18,22 @@ class Encoder(BasicModel):
         self.encoder_layers = config.encoder_layers
         self.res = config.res_connection
         self.load_path = config.vae_path['encoder']
-
+        self.use_gpu = config.use_gpu
+        self.conv_act = nn.ReLU()
         self.RGconv = []
         self.embedding_layer = nn.Embedding(self.max_atom_num + 1, self.embeddim, padding_idx=0)
 
         for i in range(self.encoder_layers):
-            self.RGconv.append(RGCNconv(self.embeddim, bond_type=self.bond_type))
+            self.RGconv.append(RGCNconv(self.embeddim, self.conv_act, bond_type=self.bond_type))
 
         # load if necessary
         if self.load_path:
             self.load_state_dict(torch.load(self.load_path))
+
+        if self.use_gpu:
+            self.cuda()
+            for rgconv in self.RGconv:
+                rgconv.cuda()
 
     '''N :node feature, E:adj_matrix'''
 
@@ -50,21 +56,36 @@ class Predictor(BasicModel):
         self.embeddim = config.node_feature_dim
         self.agg = torch.mean
         self.load_path = config.pred_path[pred_id]
+        self.use_gpu = config.use_gpu
 
-        self.layer = nn.Sequential(
-            nn.Linear(self.embeddim, 40),
-            nn.ReLU(),
-            nn.Linear(40, 20),
-            nn.ReLU(),
-            nn.Linear(20, 1)
-        )
+        # self.layer = nn.Sequential(
+        #     nn.Linear(self.embeddim, 40),
+        #     nn.Tanh(),
+        #     nn.Linear(40, 20),
+        #     nn.Tanh(),
+        #     nn.Linear(20, 1)
+        # )
+
+        '''rGCN'''
+        self.MLP_act = nn.ReLU()
+        self.MLP1 = nn.Linear(self.embeddim, 20)
+        self.MLP2 = nn.Linear(20, 20)
+        self.MLP3 = nn.Linear(20, 1)
 
         # load if necessary
         if self.load_path:
             self.load_state_dict(torch.load(self.load_path))
 
+        if self.use_gpu:
+            self.cuda()
+
+
     def forward(self, H):
-        self.agg(self.layer(H))
+        H = self.MLP_act(self.MLP1(H))
+        H = self.MLP_act(self.MLP2(H)) + H
+        score = torch.mean(self.MLP3(H), dim=1)
+
+        return score
 
 
 '''VAE part decoder'''
@@ -78,6 +99,7 @@ class Decoder(BasicModel):
         self.max_atom_num = config.max_atom_num
         self.max_bond_type = config.max_bond_type
         self.load_path = config.vae_path['decoder']
+        self.use_gpu = config.use_gpu
 
         self.MLP_mu = nn.Linear(self.embeddim, self.embeddim)
         self.MLP_logvar = nn.Linear(self.embeddim, self.embeddim)
@@ -99,6 +121,9 @@ class Decoder(BasicModel):
 
         if self.load_path:
             self.load_state_dict(torch.load(self.load_path))
+
+        if self.use_gpu:
+            self.cuda()
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
@@ -184,8 +209,8 @@ class VAE(BasicModel):
         self.pred_id = config.predictor_id
         self.pred_num = len(config.predictor_id)
         self.prop_weight = config.prop_loss_weight
-        self.pro_criterion = nn.MSELoss()
-        self.vis_loss = nn.L1Loss()
+        self.pro_criterion = nn.MSELoss(reduction='sum')
+        self.vis_loss = nn.L1Loss(reduction='mean')
 
         '''calculating different kinds of loss function'''
         self.pred_on = True
@@ -210,26 +235,24 @@ class VAE(BasicModel):
         props_loss, de_loss, visloss = 0, 0, 0
         if self.pred_on:
             props = {predid: self.predictors[predid](H) for predid in self.pred_id}
-            props_loss, visloss = self.pro_loss(props, labels)[0]
+            props_loss, visloss = self.pro_loss(props, labels)
 
         if self.decoder_on:
             logits, de_loss = self.decoder(H, N, E)
 
-        loss = props_loss + de_loss
+        loss = (props_loss + de_loss) / N.size(0)  # 取平均值
 
         return {'props': props, 'graphs': mol_graphs, 'loss': loss, 'visloss': visloss}
 
-
-
-    '''labels {'property_name':value(tensor[batch*1])} return loss for optimization and for visualization'''
+    '''labels {'property_name':value(tensor[batch])} return loss for optimization and for visualization'''
 
     def pro_loss(self, props, labels):
 
         pro_loss = 0
         pro_visloss = {}
         for pro_id in labels.keys():
-            pro_loss += self.prop_weight[pro_id] * self.pro_criterion(props[pro_id], labels[pro_id])
-            pro_visloss.update({pro_id: self.vis_loss(props[pro_id], labels[pro_id])})
+            pro_loss += self.prop_weight[pro_id] * self.pro_criterion(props[pro_id].squeeze(), labels[pro_id])
+            pro_visloss.update({pro_id: self.vis_loss(props[pro_id].squeeze(), labels[pro_id])})
 
             '''left space for visualization'''
 

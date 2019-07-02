@@ -22,10 +22,10 @@ class Config():
         # GCN options
         self.agg_fun = torch.mean
         self.activation = F.leaky_relu
-        self.node_feature_dim = 60
+        self.node_feature_dim = 100
 
         # vae options
-        self.encoder_layers = 3
+        self.encoder_layers = 4
         self.decoder_layers = 2
         self.res_connection = True
         self.predictor_id = ['qed']  # number of properties needs to predict
